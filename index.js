@@ -8,11 +8,12 @@ const fs = require('fs');
 const app = express();
 app.use(cors());
 
+// Load config
 const PORT = process.env.PORT || 5011;
-const UPLOAD_ROOT = process.env.UPLOAD_ROOT;
-const BASE_URL = process.env.BASE_URL;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/var/www/uploads/email-templates';
 
-// ✅ Configure Multer storage
+// Set up multer storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const now = new Date();
@@ -31,16 +32,25 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// POST /upload – handle file upload
 app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
 
   const folder = path.basename(path.dirname(req.file.path));
   const filename = req.file.filename;
-
   const fileUrl = `${BASE_URL}/email-templates/${folder}/${filename}`;
+
   res.json({ success: true, url: fileUrl });
 });
 
+// GET /ping – test route
+app.get('/ping', (req, res) => {
+  res.json({ message: 'Upload server is running ✅' });
+});
+
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ Upload server running at ${BASE_URL}/upload`);
 });
