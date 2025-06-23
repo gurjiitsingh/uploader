@@ -8,12 +8,12 @@ const fs = require('fs');
 const app = express();
 app.use(cors());
 
-// Load config
+// Load environment config
 const PORT = process.env.PORT || 5011;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/var/www/uploads/email-templates';
 
-// Set up multer storage
+// Multer storage setup
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const now = new Date();
@@ -30,9 +30,15 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+// ✅ Allow all file types including .html
+const upload = multer({
+  storage,
+  fileFilter: function (req, file, cb) {
+    cb(null, true); // Accept everything
+  }
+});
 
-// POST /upload – handle file upload
+// Upload endpoint
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -45,7 +51,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ success: true, url: fileUrl });
 });
 
-// GET /ping – test route
+// Health check
 app.get('/ping', (req, res) => {
   res.json({ message: 'Upload server is running ✅' });
 });
